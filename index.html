@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Listing Writer</title>
+<style>
+  :root{
+    --bg:#FFF7EE;
+    --card:#FFFFFF;
+    --ink:#3A2E39;
+    --muted:#8A7E88;
+    --peach:#FFB37B;
+    --peach-dark:#F08A3C;
+    --mint:#BFE8D9;
+    --sky:#CDE7F7;
+    --lav:#E4DCFA;
+    --radius:20px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.55;
+    padding:24px 16px 48px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+  header{text-align:center;margin-bottom:28px;}
+  header h1{font-size:2rem;font-weight:800;letter-spacing:-0.5px;}
+  header h1 span{color:var(--peach-dark);}
+  header p{color:var(--muted);margin-top:6px;font-size:1.05rem;}
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:24px;
+    box-shadow:0 6px 20px rgba(58,46,57,.08);
+    margin-bottom:24px;
+  }
+  .step-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--peach);color:#fff;font-weight:700;
+    border-radius:999px;padding:6px 16px;font-size:.9rem;margin-bottom:12px;
+  }
+  .card h2{font-size:1.3rem;margin-bottom:4px;}
+  .card .hint{color:var(--muted);font-size:.95rem;margin-bottom:16px;}
+
+  /* Upload */
+  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  #dropZone{
+    border:2px dashed var(--peach);
+    background:#FFF3E6;
+    border-radius:var(--radius);
+    padding:28px 16px;
+    text-align:center;cursor:pointer;
+    transition:.2s;
+  }
+  #dropZone:hover,#dropZone.drag{background:#FFE8D2;}
+  #dropZone .big{font-size:2rem;}
+  #dropZone strong{color:var(--peach-dark);}
+  #fileInput{display:none;}
+  .preview-box{display:flex;flex-direction:column;gap:12px;align-items:center;}
+  #photoPreview{
+    width:100%;max-width:320px;height:220px;
+    border-radius:16px;object-fit:cover;
+    background:var(--sky);display:block;
+  }
+  #previewPlaceholder{
+    width:100%;max-width:320px;height:220px;border-radius:16px;
+    background:var(--sky);display:flex;align-items:center;justify-content:center;
+    color:#5B87A8;font-weight:600;
+  }
+  .examples-title{margin:22px 0 10px;font-size:.95rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .examples{display:flex;gap:14px;flex-wrap:wrap;}
+  .example{
+    width:110px;text-align:center;cursor:pointer;
+    border-radius:14px;padding:8px;border:2px solid transparent;
+    transition:.15s;background:#FFF9F2;
+  }
+  .example:hover,.example.selected{border-color:var(--peach);background:#FFF3E6;}
+  .example .emoji{font-size:2.4rem;}
+  .example .name{font-size:.8rem;margin-top:4px;color:var(--ink);font-weight:600;}
+
+  /* Draft */
+  .draft-grid{display:grid;gap:14px;}
+  .draft-item{border-radius:14px;padding:16px;}
+  .draft-item h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px;}
+  #draftTitle{background:#FFF3E6;font-size:1.15rem;font-weight:700;}
+  #draftDesc{background:#EAF6F0;}
+  #draftPoints{background:#F0EDFB;list-style:none;}
+  #draftPoints li{padding-left:26px;position:relative;margin:4px 0;}
+  #draftPoints li::before{content:"✓";position:absolute;left:0;color:var(--peach-dark);font-weight:800;}
+  .copy-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  button{
+    font-family:inherit;font-size:.95rem;font-weight:700;
+    border:none;border-radius:999px;padding:11px 22px;cursor:pointer;
+    transition:.15s;
+  }
+  .btn-primary{background:var(--peach-dark);color:#fff;}
+  .btn-primary:hover{background:#D9792E;}
+  .btn-soft{background:var(--mint);color:#1F6B4E;}
+  .btn-soft:hover{background:#A8DCC6;}
+  .copy-ok{background:#8BC7A8 !important;color:#fff !important;}
+
+  /* Quick edit */
+  .edit-grid{display:grid;gap:16px;}
+  label{font-weight:700;font-size:.9rem;display:block;margin-bottom:6px;}
+  textarea,input[type=text]{
+    width:100%;font-family:inherit;font-size:1rem;color:var(--ink);
+    border:2px solid #F0E4D6;border-radius:12px;padding:12px;resize:vertical;
+    background:#FFFCF8;
+  }
+  textarea:focus,input:focus{outline:none;border-color:var(--peach);}
+  .tone-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .tone{
+    border-radius:999px;padding:9px 18px;font-weight:700;font-size:.9rem;
+    background:#FFF3E6;border:2px solid transparent;color:var(--ink);cursor:pointer;
+  }
+  .tone.active{background:var(--peach-dark);color:#fff;}
+  footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:8px;}
+
+  @media(max-width:640px){
+    .upload-grid{grid-template-columns:1fr;}
+    header h1{font-size:1.5rem;}
+    .card{padding:18px;}
+    .example{width:96px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🛍️ Product Listing <span>Writer</span></h1>
+    <p>Turn a product photo into a ready-to-post marketplace listing — in seconds.</p>
+  </header>
+
+  <!-- SECTION 1: Photo Upload -->
+  <section class="card" id="section-upload">
+    <span class="step-badge">1 · Photo Upload</span>
+    <h2>Add your product photo</h2>
+    <p class="hint">Choose a photo from your device, or tap an example below to try it out.</p>
+    <div class="upload-grid">
+      <div>
+        <div id="dropZone">
+          <div class="big">📷</div>
+          <p><strong>Tap to choose</strong> or drag a photo here</p>
+          <p class="hint" style="margin:4px 0 0;">JPG or PNG</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+        <p class="examples-title">Try an example product</p>
+        <div class="examples" id="examples"></div>
+      </div>
+      <div class="preview-box">
+        <div id="previewPlaceholder">Your photo will appear here</div>
+        <img id="photoPreview" alt="Product photo preview" style="display:none;">
+        <button class="btn-soft" id="replaceBtn">🔄 Replace photo</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: Listing Draft -->
+  <section class="card" id="section-draft">
+    <span class="step-badge">2 · Listing Draft</span>
+    <h2>Your draft listing</h2>
+    <p class="hint" id="draftHint">Select a photo above and a draft will appear here.</p>
+    <div class="draft-grid" id="draftArea" style="display:none;">
+      <div class="draft-item" id="draftTitle"><h3>Title</h3><p id="titleText"></p></div>
+      <div class="draft-item" id="draftDesc"><h3>Description</h3><p id="descText"></p></div>
+      <div class="draft-item" id="draftPoints"><h3>Selling points</h3><ul id="pointsList"></ul></div>
+      <div class="copy-row">
+        <button class="btn-primary" id="copyAllBtn">📋 Copy title + description</button>
+        <button class="btn-soft" id="copyTitleBtn">Copy title</button>
+        <button class="btn-soft" id="copyDescBtn">Copy description</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: Quick Edit -->
+  <section class="card" id="section-edit">
+    <span class="step-badge">3 · Quick Edit</span>
+    <h2>Fine-tune the wording</h2>
+    <p class="hint">Edit the text or pick a tone — the draft above updates as you type.</p>
+    <div class="edit-grid">
+      <div>
+        <label for="editTitle">Title</label>
+        <input type="text" id="editTitle" placeholder="Pick a photo first…">
+      </div>
+      <div>
+        <label for="editDesc">Description</label>
+        <textarea id="editDesc" rows="4" placeholder="Pick a photo first…"></textarea>
+      </div>
+      <div>
+        <label>Tone</label>
+        <div class="tone-row" id="toneRow">
+          <button class="tone active" data-tone="friendly">😊 Friendly</button>
+          <button class="tone" data-tone="professional">💼 Professional</button>
+          <button class="tone" data-tone="fun">🎉 Fun &amp; punchy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Sample listings are for demonstration only — nothing is saved between visits.</footer>
+</div>
+
+<script>
+// ---------- Sample data (made up, Malaysia-specific) ----------
+const EXAMPLES = [
+  { id:"keropok", emoji:"🍤", name:"Keropok Lekor", kind:"snack" },
+  { id:"batik",  emoji:"🧣", name:"Batik Scarf",  kind:"scarf" },
+  { id:"tumbler",emoji:"🥤", name:"Tumbler",     kind:"tumbler" },
+];
+
+// tone variants: [0]=friendly [1]=professional [2]=fun
+const PRODUCTS = {
+  snack: {
+    label:"Homemade Keropok Lekor (Terengganu fish crackers)",
+    title:[
+      "Homemade Keropok Lekor — Crispy Terengganu Fish Snacks, Freshly Made",
+      "Keropok Lekor Terengganu | Traditional Fish Crackers, Handmade in Small Batches",
+      "CRUNCH ALERT! 🍤 Authentic Keropok Lekor — Terengganu's Favourite Crispy Snack",
+    ],
+    desc:[
+      "Craving a true taste of Terengganu? Our keropok lekor is handmade in small batches using fresh fish, then fried until golden and chewy inside. Perfect as a teatime snack with chilli sauce, or share a pack with family during balik kampung season. We pack them fresh on the day of delivery so every bite stays crispy and tasty.",
+      "Traditional handmade keropok lekor from Terengganu, prepared in small batches with fresh fish and tapioca flour for an authentic chewy texture. Suitable for resellers, cafés and event catering. Vacuum-packed for freshness and delivered nationwide within Peninsular Malaysia. Bulk orders welcome.",
+      "POV: you found THE crispy snack 🤩 Handmade Terengganu keropok lekor, fried fresh and packed the same day. Chewy inside, crunchy outside, dangerous to open just one pack 😅 Great for teatime, road trips, or raya open house. Fast ship from Kuala Terengganu — grab yours before we run out!",
+    ],
+    points:[
+      ["Handmade in small batches for that authentic homemade taste",
+       "Produced in controlled small batches to ensure consistent quality",
+       "Small-batch made = maximum crunch in every single piece 🍤"],
+      ["Fried fresh and packed on delivery day, never stored for long",
+       "Vacuum-packed on dispatch day to preserve freshness",
+       "Fried fresh, packed fast, delivered crispy 🔥"],
+      ["Great for teatime, open houses, or as a gift from Terengganu",
+       "Ideal for retail resale, cafés and corporate gift hampers",
+       "One pack never survives teatime — seriously, we've tried 😂"],
+    ],
+  },
+  scarf: {
+    label:"Hand-stamped batik scarf (Kelantan cotton)",
+    title:[
+      "Hand-Stamped Batik Scarf — Soft Kelantan Cotton, Unique Malaysian Print",
+      "Kelantan Hand-Blocked Batik Scarf | 100% Cotton, Handmade in Malaysia",
+      "Wear a piece of Malaysia! 🧣 Hand-Stamped Batik Scarf from Kelantan",
+    ],
+    desc:[
+      "Each of these batik scarves is hand-stamped by artisans in Kelantan, so no two prints are exactly alike. The lightweight cotton feels soft on the skin and drapes beautifully — wear it to the office, to a wedding, or as a thoughtful gift. Colours are set using traditional wax-resist dyeing, so the pattern stays vivid wash after wash.",
+      "Hand-stamped batik scarf made from 100% Kelantan cotton using traditional wax-resist techniques. Each piece features a unique artisan print, suitable for formal and everyday wear. Dimensions approximately 180 × 45 cm. Colour-fast dyeing process; gentle hand wash recommended. Ideal for retail and corporate gifting.",
+      "Warning: compliments incoming 🥰 This hand-stamped batik scarf is straight from Kelantan artisans — every print is one-of-a-kind, just like you ✨ Buttery-soft cotton, gorgeous colours, and it goes with EVERYTHING. Gift it or keep it (we won't judge).",
+    ],
+    points:[
+      ["Hand-stamped by Kelantan artisans — every scarf is one of a kind",
+       "Authentic hand-blocked batik, each piece individually unique",
+       "One-of-a-kind print = zero awkward twin-scarf moments ✌️"],
+      ["Soft, breathable cotton that works in Malaysian weather",
+       "Premium lightweight cotton, comfortable in tropical climates",
+       "So soft and airy you'll forget you're even wearing it ☁️"],
+      ["Colour-fast traditional dyeing keeps the pattern vibrant",
+       "Colour-set through wax-resist dyeing for long-lasting vibrancy",
+       "The colours? Still vibrant after wash after wash 💛"],
+    ],
+  },
+  tumbler: {
+    label:"Insulated stainless steel tumbler (500 ml)",
+    title:[
+      "Insulated Tumbler 500ml — Keeps Drinks Cold 12 Hours, Leak-Proof Lid",
+      "500 ml Stainless Steel Insulated Tumbler | Double-Wall, Leak-Resistant",
+      "Ice still icy after LUNCH?! ❄️ 500ml Insulated Tumbler with Leak-Proof Lid",
+    ],
+    desc:[
+      "Say goodbye to lukewarm teh ais. This 500 ml tumbler uses double-wall vacuum insulation to keep cold drinks cold for up to 12 hours and hot drinks warm for 6. The leak-proof lid makes it bag-safe for commutes, and the matte finish comes in colours inspired by Malaysian sunsets. Fits standard car cup holders too.",
+      "Double-wall vacuum-insulated stainless steel tumbler, 500 ml capacity. Cold retention up to 12 hours, heat retention up to 6 hours. Leak-resistant lid with silicone seal; powder-coated exterior for secure grip. Fits standard cup holders. Suitable for office, travel and outdoor use.",
+      "Your iced kopi? STILL cold at 3pm ❄️😎 This 500ml tumbler has double-wall insulation that keeps cold drinks icy for 12 hours (hot ones toasty for 6). Leak-proof lid = zero tragedy in your bag. Cute matte colours, fits your car holder — hydrate in style, la!",
+    ],
+    points:[
+      ["Double-wall insulation keeps drinks cold for hours",
+       "Vacuum insulation maintains beverage temperature up to 12 hours",
+       "Ice cubes at lunch like it's still breakfast ❄️"],
+      ["Leak-proof lid — safe to toss in your bag or backpack",
+       "Silicone-sealed leak-resistant lid for bag-safe transport",
+       "Toss it in your bag with ZERO fear 🙌"],
+      ["Fits car cup holders and comes in sunset-inspired colours",
+       "Standard cup-holder compatible; multiple colour options",
+       "Fits the car holder AND your aesthetic 🌅"],
+    ],
+  },
+};
+
+const TONES = ["friendly","professional","fun"];
+
+// ---------- State ----------
+let currentProduct = null;   // key into PRODUCTS
+let tone = "friendly";
+let draft = { title:"", desc:"", points:[] };
+let hasPhoto = false;
+
+const $ = id => document.getElementById(id);
+
+// ---------- Build example tiles ----------
+function renderExamples(){
+  $("examples").innerHTML = "";
+  EXAMPLES.forEach(ex=>{
+    const div = document.createElement("div");
+    div.className = "example";
+    div.dataset.kind = ex.kind;
+    div.innerHTML = `<div class="emoji">${ex.emoji}</div><div class="name">${ex.name}</div>`;
+    div.addEventListener("click", ()=> selectExample(ex, div));
+    $("examples").appendChild(div);
+  });
+}
+
+function selectExample(ex, div, silent){
+  document.querySelectorAll(".example").forEach(e=>e.classList.remove("selected"));
+  if(div) div.classList.add("selected");
+  currentProduct = ex.kind;
+  hasPhoto = true;
+  // Example tiles show a styled emoji tile instead of a real file
+  $("photoPreview").style.display = "none";
+  const ph = $("previewPlaceholder");
+  ph.style.display = "flex";
+  ph.style.background = "linear-gradient(135deg,#FFE3C8,#FFD1E8)";
+  ph.style.fontSize = "4rem";
+  ph.textContent = ex.emoji;
+  generateDraft();
+}
+
+// ---------- Feature 1: photo -> listing ----------
+function generateDraft(){
+  if(!currentProduct) return;
+  const p = PRODUCTS[currentProduct];
+  const i = TONES.indexOf(tone);
+  draft = {
+    title: p.title[i],
+    desc:  p.desc[i],
+    points:[...p.points[i]],
+  };
+  $("editTitle").value = draft.title;
+  $("editDesc").value = draft.desc;
+  renderDraft();
+}
+
+function renderDraft(){
+  $("draftHint").style.display = "none";
+  $("draftArea").style.display = "grid";
+  $("titleText").textContent = draft.title;
+  $("descText").textContent = draft.desc;
+  $("pointsList").innerHTML = draft.points.map(pt=>`<li>${pt}</li>`).join("");
+}
+
+// ---------- Feature 2: tone rewrite ----------
+$("toneRow").addEventListener("click", e=>{
+  const btn = e.target.closest(".tone");
+  if(!btn || !currentProduct) return;
+  tone = btn.dataset.tone;
+  document.querySelectorAll(".tone").forEach(b=>b.classList.toggle("active", b===btn));
+  generateDraft(); // immediate rewrite in new tone
+});
+
+// ---------- Editing syncs to draft ----------
+$("editTitle").addEventListener("input", e=>{
+  draft.title = e.target.value; renderDraft();
+});
+$("editDesc").addEventListener("input", e=>{
+  draft.desc = e.target.value; renderDraft();
+});
+
+// ---------- Feature 3: copy ----------
+function flash(btn, msg){
+  const old = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add("copy-ok");
+  setTimeout(()=>{ btn.textContent = old; btn.classList.remove("copy-ok"); }, 1400);
+}
+function copyText(text, btn, msg){
+  if(!text) return;
+  const done = ()=> flash(btn, msg);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta); done();
+  }
+}
+$("copyAllBtn").addEventListener("click", e=>{
+  if(!currentProduct) return;
+  const pts = draft.points.map(p=>"• "+p).join("\n");
+  copyText(`${draft.title}\n\n${draft.desc}\n\n${pts}`, e.currentTarget, "✅ Copied!");
+});
+$("copyTitleBtn").addEventListener("click", e=> copyText(draft.title, e.currentTarget, "✅ Copied!"));
+$("copyDescBtn").addEventListener("click", e=> copyText(draft.desc, e.currentTarget, "✅ Copied!"));
+
+// ---------- Upload handling ----------
+$("dropZone").addEventListener("click", ()=>$("fileInput").click());
+$("replaceBtn").addEventListener("click", ()=>$("fileInput").click());
+$("fileInput").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    $("previewPlaceholder").style.display = "none";
+    $("previewPlaceholder").style.background = "";
+    $("previewPlaceholder").style.fontSize = "";
+    const img = $("photoPreview");
+    img.style.display = "block";
+    img.src = ev.target.result;
+    img.alt = "Uploaded product photo";
+    // Guess a product type from filename keywords, default to a generic pick
+    const n = file.name.toLowerCase();
+    currentProduct = n.includes("scarf")||n.includes("batik") ? "scarf"
+                   : n.includes("tumbler")||n.includes("bottle") ? "tumbler"
+                   : n.includes("keropok")||n.includes("snack")||n.includes("food") ? "snack"
+                   : "snack";
+    hasPhoto = true;
+    document.querySelectorAll(".example").forEach(el=>el.classList.remove("selected"));
+    generateDraft();
+  };
+  reader.readAsDataURL(file);
+});
+// drag & drop
+["dragover","dragenter"].forEach(ev=>$("dropZone").addEventListener(ev, e=>{e.preventDefault();$("dropZone").classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>$("dropZone").addEventListener(ev, e=>{e.preventDefault();$("dropZone").classList.remove("drag");}));
+$("dropZone").addEventListener("drop", e=>{
+  const f = e.dataTransfer.files[0];
+  if(f){ $("fileInput").files = e.dataTransfer.files; $("fileInput").dispatchEvent(new Event("change")); }
+});
+
+// ---------- Init: app never opens empty ----------
+renderExamples();
+// Show the first example selected and its draft on load
+selectExample(EXAMPLES[0], document.querySelector(".example"), true);
+</script>
+</body>
+</html>
